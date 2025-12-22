@@ -1,0 +1,23 @@
+{
+  "name": "podshift",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "podshift": "./bin/podshift.js"
+  },
+  "scripts": {
+    "analyze": "node ./bin/podshift.js analyze",
+    "lint": "eslint .",
+    "format": "prettier -w ."
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^12.1.0",
+    "fast-glob": "^3.3.2",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.16.0",
+    "prettier": "^3.4.2"
+  }
+}
