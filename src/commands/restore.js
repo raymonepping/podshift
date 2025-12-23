@@ -37,11 +37,13 @@ async function movePath(srcAbs, dstAbs) {
 async function listArchives(archiveBaseAbs) {
   if (!fsSync.existsSync(archiveBaseAbs)) return [];
   const entries = await fs.readdir(archiveBaseAbs, { withFileTypes: true });
-  return entries
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    // ISO-ish names sort correctly as strings most of the time
-    .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
+  return (
+    entries
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      // ISO-ish names sort correctly as strings most of the time
+      .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+  );
 }
 
 async function walkFiles(dirAbs) {
@@ -90,7 +92,9 @@ export async function restoreCommand(opts) {
   const yes = Boolean(opts.yes);
   const overwrite = Boolean(opts.overwrite);
 
-  const { archiveBaseAbs, archiveAbs: explicitArchiveAbs } = resolveArchivePath({ repoRootAbs, from });
+  const { archiveBaseAbs, archiveAbs: explicitArchiveAbs } = resolveArchivePath(
+    { repoRootAbs, from },
+  );
 
   let archiveAbs = explicitArchiveAbs;
 
@@ -126,7 +130,12 @@ export async function restoreCommand(opts) {
 
     // Safety: never restore outside repo root
     if (!isInsideRepo(repoRootAbs, dstAbs)) {
-      actions.push({ type: "skip", src: srcAbs, dst: dstAbs, reason: "destination outside repo root" });
+      actions.push({
+        type: "skip",
+        src: srcAbs,
+        dst: dstAbs,
+        reason: "destination outside repo root",
+      });
       continue;
     }
 
@@ -147,7 +156,9 @@ export async function restoreCommand(opts) {
   console.log("");
 
   if (!yes && !dryRun) {
-    const ok = await confirm("Restore these files from the archive", { defaultYes: false });
+    const ok = await confirm("Restore these files from the archive", {
+      defaultYes: false,
+    });
     if (!ok) {
       console.log("Aborted.");
       return;
@@ -158,7 +169,12 @@ export async function restoreCommand(opts) {
     const dstExists = fsSync.existsSync(c.dstAbs);
 
     if (dstExists && !overwrite) {
-      actions.push({ type: "skip", src: c.srcAbs, dst: c.dstAbs, reason: "destination exists" });
+      actions.push({
+        type: "skip",
+        src: c.srcAbs,
+        dst: c.dstAbs,
+        reason: "destination exists",
+      });
       continue;
     }
 
@@ -169,7 +185,12 @@ export async function restoreCommand(opts) {
       await movePath(c.srcAbs, c.dstAbs);
     }
 
-    actions.push({ type: "restore", src: c.srcAbs, dst: c.dstAbs, overwritten: dstExists && overwrite });
+    actions.push({
+      type: "restore",
+      src: c.srcAbs,
+      dst: c.dstAbs,
+      overwritten: dstExists && overwrite,
+    });
   }
 
   console.log("✅ Restore complete");
@@ -178,7 +199,9 @@ export async function restoreCommand(opts) {
   console.log("Actions:");
   for (const a of actions) {
     if (a.type === "restore") {
-      console.log(`- restore: ${a.dst} ${a.overwritten ? "(overwrote existing)" : ""}`.trim());
+      console.log(
+        `- restore: ${a.dst} ${a.overwritten ? "(overwrote existing)" : ""}`.trim(),
+      );
     } else {
       console.log(`- skip:    ${a.dst} (${a.reason})`);
     }

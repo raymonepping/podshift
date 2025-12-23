@@ -22,27 +22,31 @@ export async function analyzeCommand(opts) {
     dockerfileContents[df] = await readDockerfile(df);
   }
 
-const evaluation = evaluateRules({
-  repoRoot,
-  composePath,
-  compose,
-  dockerfiles,
-  dockerfileContents,
-  strict: Boolean(opts.strict)
-});
-
+  const evaluation = evaluateRules({
+    repoRoot,
+    composePath,
+    compose,
+    dockerfiles,
+    dockerfileContents,
+    strict: Boolean(opts.strict),
+  });
 
   const reportMd = renderMarkdownReport(evaluation);
 
   await writeJson(path.join(outDir, "report.json"), evaluation);
-  await writeJson(path.join(outDir, "recommendation.json"), evaluation.recommendation);
+  await writeJson(
+    path.join(outDir, "recommendation.json"),
+    evaluation.recommendation,
+  );
   await writeText(path.join(outDir, "report.md"), reportMd);
 
   const { verdict } = evaluation.recommendation;
   const color =
-    verdict === "GREEN" ? chalk.green :
-    verdict === "YELLOW" ? chalk.yellow :
-    chalk.red;
+    verdict === "GREEN"
+      ? chalk.green
+      : verdict === "YELLOW"
+        ? chalk.yellow
+        : chalk.red;
 
   console.log(color(`\nVerdict: ${verdict}`));
   console.log(`Report: ${path.join(outDir, "report.md")}\n`);

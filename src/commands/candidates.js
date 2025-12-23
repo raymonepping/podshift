@@ -44,22 +44,33 @@ function computeHintsFromComposeText(text) {
     parseFailed: false,
     hasHostDockerInternal: /host\.docker\.internal/i.test(t),
     hasDockerSock: /\/var\/run\/docker\.sock/i.test(t),
-    hasPrivileged: /(privileged:\s*true|pid:\s*host|ipc:\s*host|network_mode:\s*host)/i.test(t)
+    hasPrivileged:
+      /(privileged:\s*true|pid:\s*host|ipc:\s*host|network_mode:\s*host)/i.test(
+        t,
+      ),
   };
 }
 
 function scanTree(rootAbs, opts) {
   const extraIgnores = Array.isArray(opts.ignore)
     ? opts.ignore
-    : (opts.ignore ? [opts.ignore] : []);
+    : opts.ignore
+      ? [opts.ignore]
+      : [];
 
-  const { rules, meta: ignoreMeta } = loadIgnoreRulesWithMeta(rootAbs, extraIgnores, {
-    ignoreFile: opts.ignoreFile,
-    useDefaults: opts.defaultIgnore !== false
-  });
+  const { rules, meta: ignoreMeta } = loadIgnoreRulesWithMeta(
+    rootAbs,
+    extraIgnores,
+    {
+      ignoreFile: opts.ignoreFile,
+      useDefaults: opts.defaultIgnore !== false,
+    },
+  );
 
   const maxDepth = Number.isFinite(opts.maxDepth) ? opts.maxDepth : 20;
-  const maxEntries = Number.isFinite(opts.maxEntries) ? opts.maxEntries : 250000;
+  const maxEntries = Number.isFinite(opts.maxEntries)
+    ? opts.maxEntries
+    : 250000;
 
   const stack = [{ dir: rootAbs, depth: 0 }];
   const composeFiles = [];
@@ -88,7 +99,7 @@ function scanTree(rootAbs, opts) {
           scannedEntries: scanned,
           ignoredEntries: ignored,
           ignoreMeta,
-          truncated: true
+          truncated: true,
         };
       }
 
@@ -122,7 +133,7 @@ function scanTree(rootAbs, opts) {
     scannedEntries: scanned,
     ignoredEntries: ignored,
     ignoreMeta,
-    truncated: false
+    truncated: false,
   };
 }
 
@@ -146,13 +157,15 @@ function groupComposeProjects(rootAbs, composeFilesAbs) {
       projectDir: dirAbs,
       composeFiles,
       dockerfiles: [],
-      hints: null
+      hints: null,
     };
   });
 
   // Deterministic ordering, name-first but stable if names collide
   projects.sort((a, b) =>
-    a.name === b.name ? a.projectDir.localeCompare(b.projectDir) : a.name.localeCompare(b.name)
+    a.name === b.name
+      ? a.projectDir.localeCompare(b.projectDir)
+      : a.name.localeCompare(b.name),
   );
   return projects;
 }
@@ -166,28 +179,45 @@ function collapseChildProjects(projects, includeChildProjects) {
   if (includeChildProjects) return projects;
 
   const sep = path.sep;
-  const byDirAsc = [...projects].sort((a, b) => a.projectDir.length - b.projectDir.length);
+  const byDirAsc = [...projects].sort(
+    (a, b) => a.projectDir.length - b.projectDir.length,
+  );
 
   const kept = [];
   for (const p of byDirAsc) {
-    const isChild = kept.some((k) => p.projectDir === k.projectDir || p.projectDir.startsWith(k.projectDir + sep));
+    const isChild = kept.some(
+      (k) =>
+        p.projectDir === k.projectDir ||
+        p.projectDir.startsWith(k.projectDir + sep),
+    );
     if (!isChild) kept.push(p);
   }
 
   kept.sort((a, b) =>
-    a.name === b.name ? a.projectDir.localeCompare(b.projectDir) : a.name.localeCompare(b.name)
+    a.name === b.name
+      ? a.projectDir.localeCompare(b.projectDir)
+      : a.name.localeCompare(b.name),
   );
   return kept;
 }
 
-function attachDockerfilesToProjects(rootAbs, projects, dockerfilesAbs, includeChildren) {
+function attachDockerfilesToProjects(
+  rootAbs,
+  projects,
+  dockerfilesAbs,
+  includeChildren,
+) {
   if (!includeChildren) return;
 
-  const projectDirs = projects.map((p) => p.projectDir).sort((a, b) => b.length - a.length);
+  const projectDirs = projects
+    .map((p) => p.projectDir)
+    .sort((a, b) => b.length - a.length);
 
   for (const df of dockerfilesAbs) {
     const dfDir = path.dirname(df);
-    const owner = projectDirs.find((pd) => dfDir === pd || dfDir.startsWith(pd + path.sep));
+    const owner = projectDirs.find(
+      (pd) => dfDir === pd || dfDir.startsWith(pd + path.sep),
+    );
     if (!owner) continue;
 
     const p = projects.find((x) => x.projectDir === owner);
@@ -220,7 +250,9 @@ function formatIgnoreSummary(ignoreMeta) {
   const parts = [`defaults=${defaultsEnabled ? "yes" : "no"}`];
 
   // Preferred: ignoreMeta.effective.loadedFiles
-  let loaded = Array.isArray(ignoreMeta.effective?.loadedFiles) ? ignoreMeta.effective.loadedFiles : [];
+  let loaded = Array.isArray(ignoreMeta.effective?.loadedFiles)
+    ? ignoreMeta.effective.loadedFiles
+    : [];
 
   // Fallback: files.root/home/custom used flags
   if (!loaded.length && ignoreMeta.files) {
@@ -230,15 +262,20 @@ function formatIgnoreSummary(ignoreMeta) {
 
     if (custom?.used && custom?.path) loaded.push(custom.path);
     if (root?.used && root?.path) loaded.push(root.path);
-    if (home?.used && home?.path && !home?.skippedBecauseSameAsRoot) loaded.push(home.path);
+    if (home?.used && home?.path && !home?.skippedBecauseSameAsRoot)
+      loaded.push(home.path);
   }
 
   // Older flat keys fallback
   if (!loaded.length) {
-    if (ignoreMeta.ignoreFileLoaded && ignoreMeta.ignoreFile) loaded.push(ignoreMeta.ignoreFile);
-    if (ignoreMeta.customLoaded && ignoreMeta.customIgnore) loaded.push(ignoreMeta.customIgnore);
-    if (ignoreMeta.rootLoaded && ignoreMeta.rootIgnore) loaded.push(ignoreMeta.rootIgnore);
-    if (ignoreMeta.homeLoaded && ignoreMeta.homeIgnore) loaded.push(ignoreMeta.homeIgnore);
+    if (ignoreMeta.ignoreFileLoaded && ignoreMeta.ignoreFile)
+      loaded.push(ignoreMeta.ignoreFile);
+    if (ignoreMeta.customLoaded && ignoreMeta.customIgnore)
+      loaded.push(ignoreMeta.customIgnore);
+    if (ignoreMeta.rootLoaded && ignoreMeta.rootIgnore)
+      loaded.push(ignoreMeta.rootIgnore);
+    if (ignoreMeta.homeLoaded && ignoreMeta.homeIgnore)
+      loaded.push(ignoreMeta.homeIgnore);
   }
 
   // De-dupe while preserving order
@@ -275,7 +312,9 @@ function renderLegacyText(result, opts) {
     lines.push(`   - dir: ${p.projectDir}`);
 
     const composeList = (p.composeFiles || []).map((c) => c.rel);
-    lines.push(`   - compose: ${composeList.length ? composeList.join(", ") : "(none)"}`);
+    lines.push(
+      `   - compose: ${composeList.length ? composeList.join(", ") : "(none)"}`,
+    );
 
     if (opts.includeChildren && p.dockerfiles?.length) {
       for (const d of p.dockerfiles) lines.push(`   - dockerfile: ${d.rel}`);
@@ -287,7 +326,7 @@ function renderLegacyText(result, opts) {
         lines.push("   - hints: compose read failed");
       } else {
         lines.push(
-          `   - hints: host.docker.internal=${h.hasHostDockerInternal ? "true" : "false"} | docker.sock=${h.hasDockerSock ? "true" : "false"} | privileged=${h.hasPrivileged ? "true" : "false"}`
+          `   - hints: host.docker.internal=${h.hasHostDockerInternal ? "true" : "false"} | docker.sock=${h.hasDockerSock ? "true" : "false"} | privileged=${h.hasPrivileged ? "true" : "false"}`,
         );
       }
     }
@@ -310,7 +349,9 @@ function renderCandidatesMarkdown(result, opts) {
   const ignoreSummary = formatIgnoreSummary(result.ignore);
   if (ignoreSummary) lines.push(`- Ignore: \`${ignoreSummary}\``);
 
-  lines.push(`- Nested compose projects: \`${opts.includeChildProjects ? "included" : "collapsed"}\``);
+  lines.push(
+    `- Nested compose projects: \`${opts.includeChildProjects ? "included" : "collapsed"}\``,
+  );
   lines.push("");
 
   lines.push("## Candidates");
@@ -344,9 +385,13 @@ function renderCandidatesMarkdown(result, opts) {
       lines.push("- Hints:");
       if (h.parseFailed) lines.push("  - compose read failed");
       else {
-        lines.push(`  - host.docker.internal: \`${Boolean(h.hasHostDockerInternal)}\``);
+        lines.push(
+          `  - host.docker.internal: \`${Boolean(h.hasHostDockerInternal)}\``,
+        );
         lines.push(`  - docker.sock mount: \`${Boolean(h.hasDockerSock)}\``);
-        lines.push(`  - privileged/host namespaces: \`${Boolean(h.hasPrivileged)}\``);
+        lines.push(
+          `  - privileged/host namespaces: \`${Boolean(h.hasPrivileged)}\``,
+        );
       }
     }
 
@@ -378,12 +423,17 @@ export async function candidatesCommand(opts) {
     maxEntries,
     ignore: opts.ignore,
     ignoreFile: opts.ignoreFile,
-    defaultIgnore: opts.defaultIgnore
+    defaultIgnore: opts.defaultIgnore,
   });
 
   let projects = groupComposeProjects(rootAbs, scan.composeFiles);
   projects = collapseChildProjects(projects, includeChildProjects);
-  attachDockerfilesToProjects(rootAbs, projects, scan.dockerfiles, includeChildren);
+  attachDockerfilesToProjects(
+    rootAbs,
+    projects,
+    scan.dockerfiles,
+    includeChildren,
+  );
 
   if (hints) {
     for (const p of projects) {
@@ -405,16 +455,24 @@ export async function candidatesCommand(opts) {
     truncated: scan.truncated,
     count: projects.length,
     ignore: scan.ignoreMeta,
-    projects
+    projects,
   };
 
   let output;
   if (format === "json") {
     output = JSON.stringify(result, null, 2) + "\n";
   } else if (format === "md" || format === "markdown") {
-    output = renderCandidatesMarkdown(result, { includeChildren, hints, includeChildProjects });
+    output = renderCandidatesMarkdown(result, {
+      includeChildren,
+      hints,
+      includeChildProjects,
+    });
   } else {
-    output = renderLegacyText(result, { includeChildren, hints, includeChildProjects });
+    output = renderLegacyText(result, {
+      includeChildren,
+      hints,
+      includeChildProjects,
+    });
   }
 
   if (out) writeOut(out, output);

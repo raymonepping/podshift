@@ -8,19 +8,24 @@ async function detectComposeRunner({ dryRun }) {
   // Prefer podman-compose if installed (your current setup)
   const tries = [
     { cmd: "podman-compose", args: ["version"] },
-    { cmd: "podman", args: ["compose", "version"] }
+    { cmd: "podman", args: ["compose", "version"] },
   ];
 
   for (const t of tries) {
     try {
       const r = await run(t.cmd, t.args, { stdio: "pipe", dryRun });
-      if (r.code === 0) return t.cmd === "podman" ? { type: "podman", cmd: "podman", baseArgs: ["compose"] } : { type: "podman-compose", cmd: "podman-compose", baseArgs: [] };
+      if (r.code === 0)
+        return t.cmd === "podman"
+          ? { type: "podman", cmd: "podman", baseArgs: ["compose"] }
+          : { type: "podman-compose", cmd: "podman-compose", baseArgs: [] };
     } catch {
       // ignore
     }
   }
 
-  throw new Error("No compose runner found. Install podman-compose (brew install podman-compose) or use a Podman version that supports 'podman compose'.");
+  throw new Error(
+    "No compose runner found. Install podman-compose (brew install podman-compose) or use a Podman version that supports 'podman compose'.",
+  );
 }
 
 async function ensurePodmanMachineRunning({ dryRun }) {
@@ -28,7 +33,7 @@ async function ensurePodmanMachineRunning({ dryRun }) {
 
   const res = await run("podman", ["machine", "start"], {
     dryRun,
-    stdio: dryRun ? "inherit" : "pipe"
+    stdio: dryRun ? "inherit" : "pipe",
   });
 
   if (dryRun) return;
@@ -63,10 +68,13 @@ export async function runCommand(opts) {
     fileAbs,
     "up",
     ...(detach ? ["-d"] : []),
-    ...(build ? ["--build"] : [])
+    ...(build ? ["--build"] : []),
   ];
 
-  const res = await run(runner.cmd, args, { cwd: path.resolve(projectDir), dryRun });
+  const res = await run(runner.cmd, args, {
+    cwd: path.resolve(projectDir),
+    dryRun,
+  });
   if (res.code !== 0) process.exit(res.code);
 
   console.log("✅ Podshift run complete");

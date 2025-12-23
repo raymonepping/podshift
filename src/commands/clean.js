@@ -52,7 +52,11 @@ function resolveMaybeRelativeTo(repoRootAbs, p) {
   return path.isAbsolute(p) ? p : path.resolve(repoRootAbs, p);
 }
 
-function detectDockerArtifactsFromCompose(repoRootAbs, composePathAbs, composeObj) {
+function detectDockerArtifactsFromCompose(
+  repoRootAbs,
+  composePathAbs,
+  composeObj,
+) {
   const dockerArtifacts = new Set();
 
   // The compose file itself is a docker artifact.
@@ -99,13 +103,16 @@ function detectPodmanArtifacts(repoRootAbs) {
   return [
     path.join(repoRootAbs, "podman-compose.yml"),
     path.join(repoRootAbs, "MIGRATION.md"),
-    path.join(repoRootAbs, "output", "podshift", "migrate.json")
+    path.join(repoRootAbs, "output", "podshift", "migrate.json"),
   ];
 }
 
 export async function cleanCommand(opts) {
   const repoRootAbs = path.resolve(opts.root || ".");
-  const composePathAbs = resolveMaybeRelativeTo(repoRootAbs, opts.compose || "./docker-compose.yml");
+  const composePathAbs = resolveMaybeRelativeTo(
+    repoRootAbs,
+    opts.compose || "./docker-compose.yml",
+  );
 
   const yes = Boolean(opts.yes);
   const dryRun = Boolean(opts.dryRun);
@@ -121,7 +128,11 @@ export async function cleanCommand(opts) {
 
   const dockerArtifacts = composeObj
     ? detectDockerArtifactsFromCompose(repoRootAbs, composePathAbs, composeObj)
-    : [composePathAbs, path.join(repoRootAbs, ".dockerignore"), path.join(repoRootAbs, "Dockerfile")];
+    : [
+        composePathAbs,
+        path.join(repoRootAbs, ".dockerignore"),
+        path.join(repoRootAbs, "Dockerfile"),
+      ];
 
   const podmanArtifacts = detectPodmanArtifacts(repoRootAbs);
 
@@ -135,11 +146,15 @@ export async function cleanCommand(opts) {
     .filter((p) => isInsideRepo(repoRootAbs, p))
     .filter((p) => !fsSync.existsSync(p));
 
-  const existingPodman = podmanArtifacts.map((p) => path.resolve(p)).filter((p) => fsSync.existsSync(p));
+  const existingPodman = podmanArtifacts
+    .map((p) => path.resolve(p))
+    .filter((p) => fsSync.existsSync(p));
 
   // Safety checks: only allow cleaning if migration artifacts exist, unless forced.
   if (!existingPodman.length) {
-    console.log("⚠️  No Podman migration artifacts were found (podman-compose.yml, MIGRATION.md, migrate.json).");
+    console.log(
+      "⚠️  No Podman migration artifacts were found (podman-compose.yml, MIGRATION.md, migrate.json).",
+    );
     console.log("    Refusing to clean Docker artifacts by default.");
     console.log("    Run: podshift migrate ... first, then podshift clean");
     process.exit(2);
@@ -172,9 +187,12 @@ export async function cleanCommand(opts) {
   console.log("");
 
   if (!yes && !dryRun) {
-    const ok = await confirm(doDelete ? "Delete these Docker files" : "Archive these Docker files", {
-      defaultYes: false
-    });
+    const ok = await confirm(
+      doDelete ? "Delete these Docker files" : "Archive these Docker files",
+      {
+        defaultYes: false,
+      },
+    );
     if (!ok) {
       console.log("Aborted.");
       return;

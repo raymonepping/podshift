@@ -5,11 +5,13 @@ import path from "node:path";
 async function listArchives(archiveBaseAbs) {
   if (!fsSync.existsSync(archiveBaseAbs)) return [];
   const entries = await fs.readdir(archiveBaseAbs, { withFileTypes: true });
-  return entries
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    // ISO-ish timestamps sort correctly as strings
-    .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
+  return (
+    entries
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      // ISO-ish timestamps sort correctly as strings
+      .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+  );
 }
 
 /**
@@ -36,7 +38,7 @@ async function walkFiles(dirAbs, { maxEntries = 5000, collect = false } = {}) {
           count,
           truncated: true,
           scanned: seen,
-          files: collect ? files : undefined
+          files: collect ? files : undefined,
         };
       }
 
@@ -54,7 +56,7 @@ async function walkFiles(dirAbs, { maxEntries = 5000, collect = false } = {}) {
     count,
     truncated: false,
     scanned: seen,
-    files: collect ? files : undefined
+    files: collect ? files : undefined,
   };
 }
 
@@ -86,8 +88,13 @@ export async function archivesCommand(opts) {
       process.exit(2);
     }
 
-    const walked = await walkFiles(showAbs, { maxEntries: 8000, collect: true });
-    const relFiles = (walked.files || []).map((f) => path.relative(showAbs, f)).sort();
+    const walked = await walkFiles(showAbs, {
+      maxEntries: 8000,
+      collect: true,
+    });
+    const relFiles = (walked.files || [])
+      .map((f) => path.relative(showAbs, f))
+      .sort();
 
     if (json) {
       console.log(
@@ -98,11 +105,11 @@ export async function archivesCommand(opts) {
             archive: showAbs,
             fileCount: walked.count,
             truncated: walked.truncated,
-            files: relFiles
+            files: relFiles,
           },
           null,
-          2
-        )
+          2,
+        ),
       );
       return;
     }
@@ -111,13 +118,17 @@ export async function archivesCommand(opts) {
     console.log("Podshift archives");
     console.log(`- Repo root: ${repoRootAbs}`);
     console.log(`- Archive: ${showAbs}`);
-    console.log(`- Files: ${walked.count}${walked.truncated ? " (truncated)" : ""}`);
+    console.log(
+      `- Files: ${walked.count}${walked.truncated ? " (truncated)" : ""}`,
+    );
     console.log("");
     console.log("Contents:");
     for (const f of relFiles) console.log(`- ${f}`);
     console.log("");
     console.log("Tip:");
-    console.log(`- Restore: podshift restore --root . --from ${path.basename(showAbs)}`);
+    console.log(
+      `- Restore: podshift restore --root . --from ${path.basename(showAbs)}`,
+    );
     return;
   }
 
@@ -136,7 +147,7 @@ export async function archivesCommand(opts) {
       abs,
       isLatest: name === latest,
       fileCount: walked.count,
-      truncated: walked.truncated
+      truncated: walked.truncated,
     });
   }
 
@@ -148,11 +159,11 @@ export async function archivesCommand(opts) {
           archiveBase: archiveBaseAbs,
           latest,
           count: archives.length,
-          shown: rows
+          shown: rows,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
     return;
   }
@@ -174,7 +185,7 @@ export async function archivesCommand(opts) {
   for (const r of rows) {
     const suffix = [
       r.isLatest ? "latest" : null,
-      `${r.fileCount} file${r.fileCount === 1 ? "" : "s"}${r.truncated ? "+" : ""}`
+      `${r.fileCount} file${r.fileCount === 1 ? "" : "s"}${r.truncated ? "+" : ""}`,
     ]
       .filter(Boolean)
       .join(", ");
@@ -187,5 +198,7 @@ export async function archivesCommand(opts) {
   console.log("- Show contents: podshift archives --root . --show <timestamp>");
   console.log("- Show latest: podshift archives --root . --latest");
   console.log("- Restore latest: podshift restore --root .");
-  console.log("- Restore specific: podshift restore --root . --from <timestamp>");
+  console.log(
+    "- Restore specific: podshift restore --root . --from <timestamp>",
+  );
 }

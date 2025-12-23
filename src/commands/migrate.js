@@ -29,15 +29,21 @@ export async function migrateCommand(opts) {
   const result = await transformForPodman({
     repoRoot,
     compose,
-    composePath
+    composePath,
   });
 
   const podmanComposePath = path.join(repoRoot, "podman-compose.yml");
   const migrationDocPath = path.join(repoRoot, "MIGRATION.md");
 
   if (!opts.force) {
-    if (await exists(podmanComposePath)) throw new Error(`Refusing to overwrite: ${podmanComposePath} (use --force)`);
-    if (await exists(migrationDocPath)) throw new Error(`Refusing to overwrite: ${migrationDocPath} (use --force)`);
+    if (await exists(podmanComposePath))
+      throw new Error(
+        `Refusing to overwrite: ${podmanComposePath} (use --force)`,
+      );
+    if (await exists(migrationDocPath))
+      throw new Error(
+        `Refusing to overwrite: ${migrationDocPath} (use --force)`,
+      );
   }
 
   // 1) Write podman-compose.yml
@@ -51,7 +57,9 @@ export async function migrateCommand(opts) {
   if (formatYaml) {
     try {
       const original = await fs.readFile(podmanComposePath, "utf8");
-      const formatted = await formatYamlText(original, podmanComposePath, { prettierConfig });
+      const formatted = await formatYamlText(original, podmanComposePath, {
+        prettierConfig,
+      });
 
       if (formatted.used && formatted.text !== original) {
         await fs.writeFile(podmanComposePath, formatted.text, "utf8");
@@ -81,9 +89,9 @@ export async function migrateCommand(opts) {
       migrationDocPath,
       envFiles: result.envWrites.map((x) => x.dest),
       formatYaml: Boolean(formatYaml),
-      prettierConfig: prettierConfig || null
+      prettierConfig: prettierConfig || null,
     },
-    changes: result.changes
+    changes: result.changes,
   });
 
   console.log(chalk.green("Migration artifacts generated:"));
