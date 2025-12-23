@@ -1,23 +1,35 @@
 {
   "name": "podshift",
   "version": "0.1.0",
+  "description": "Migrate Docker Compose projects to Podman-friendly workflows",
   "type": "module",
+  "license": "MIT",
   "bin": {
     "podshift": "./bin/podshift.js"
   },
   "scripts": {
+    "dev": "node ./bin/podshift.js",
     "analyze": "node ./bin/podshift.js analyze",
-    "lint": "eslint .",
+    "lint": "node --check ./bin/podshift.js",
     "format": "prettier -w ."
   },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],  
   "dependencies": {
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
     "fast-glob": "^3.3.2",
     "js-yaml": "^4.1.0"
   },
+  "engines": {
+    "node": ">=20"
+  },  
   "devDependencies": {
     "eslint": "^9.16.0",
-    "prettier": "^3.4.2"
+    "prettier": "^3.7.4"
   }
 }
