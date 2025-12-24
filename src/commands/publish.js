@@ -21,7 +21,7 @@ function runCmd(cmd, args, { cwd, env, dryRun, quiet } = {}) {
     const child = spawn(cmd, args, {
       cwd,
       env: { ...process.env, ...(env || {}) },
-      stdio: quiet ? ["ignore", "pipe", "pipe"] : "inherit"
+      stdio: quiet ? ["ignore", "pipe", "pipe"] : "inherit",
     });
 
     let stdout = "";
@@ -84,7 +84,7 @@ function pickBuildFile(repoRoot, contextAbs, explicitFile) {
     path.join(contextAbs, "Containerfile"),
     path.join(contextAbs, "Dockerfile"),
     path.join(repoRoot, "Containerfile"),
-    path.join(repoRoot, "Dockerfile")
+    path.join(repoRoot, "Dockerfile"),
   ];
 
   for (const p of candidates) {
@@ -148,7 +148,10 @@ export async function publishCommand(opts) {
   const context = path.resolve(repoRoot, opts.context || ".");
   const file = pickBuildFile(repoRoot, context, opts.file);
 
-  const platforms = parseCsvList(opts.platforms || opts.platform, ["linux/amd64", "linux/arm64"]);
+  const platforms = parseCsvList(opts.platforms || opts.platform, [
+    "linux/amd64",
+    "linux/arm64",
+  ]);
   const push = Boolean(opts.push);
 
   await ensureDir(outDir);
@@ -161,7 +164,7 @@ export async function publishCommand(opts) {
       `No Dockerfile or Containerfile found (checked context and repo root).\n` +
         `- context: ${context}\n` +
         `- repo root: ${repoRoot}\n` +
-        `Fix: run "podshift restore --root ." (if you archived it), or pass --file <path>.`
+        `Fix: run "podshift restore --root ." (if you archived it), or pass --file <path>.`,
     );
   }
 
@@ -176,7 +179,7 @@ export async function publishCommand(opts) {
     push,
     strategy: null,
     commands: [],
-    primaryError: null
+    primaryError: null,
   };
 
   const record = (cmd, args) => plan.commands.push({ cmd, args });
@@ -199,7 +202,7 @@ export async function publishCommand(opts) {
         manifestRef,
         "-f",
         file,
-        context
+        context,
       ];
 
       record("podman", args);
@@ -218,7 +221,16 @@ export async function publishCommand(opts) {
       // But we still free it to keep reruns boring
       await freeRef(manifestRef, { dryRun, quiet });
 
-      const args = ["build", "--platform", platforms[0], "-t", manifestRef, "-f", file, context];
+      const args = [
+        "build",
+        "--platform",
+        platforms[0],
+        "-t",
+        manifestRef,
+        "-f",
+        file,
+        context,
+      ];
       record("podman", args);
       await runCmd("podman", args, { dryRun, quiet });
 
@@ -235,14 +247,16 @@ export async function publishCommand(opts) {
       message: String(e?.message || e),
       code: e?.code,
       stdout: e?.stdout,
-      stderr: e?.stderr
+      stderr: e?.stderr,
     };
 
     // Fallback: build per-arch tags, then create + push a manifest
     plan.strategy = "fallback-per-arch-manifest";
 
     if (!quiet) {
-      process.stdout.write("\nPrimary build strategy failed, falling back to per-arch manifest build.\n");
+      process.stdout.write(
+        "\nPrimary build strategy failed, falling back to per-arch manifest build.\n",
+      );
     }
 
     const perArchImages = [];
@@ -255,7 +269,16 @@ export async function publishCommand(opts) {
       // Keep fallback reruns clean too
       await freeRef(archRef, { dryRun, quiet });
 
-      const args = ["build", "--platform", platform, "-t", archRef, "-f", file, context];
+      const args = [
+        "build",
+        "--platform",
+        platform,
+        "-t",
+        archRef,
+        "-f",
+        file,
+        context,
+      ];
       record("podman", args);
       await runCmd("podman", args, { dryRun, quiet });
     }
@@ -264,7 +287,10 @@ export async function publishCommand(opts) {
     await freeRef(manifestRef, { dryRun, quiet });
 
     record("podman", ["manifest", "create", manifestRef]);
-    await runCmd("podman", ["manifest", "create", manifestRef], { dryRun, quiet });
+    await runCmd("podman", ["manifest", "create", manifestRef], {
+      dryRun,
+      quiet,
+    });
 
     for (const x of perArchImages) {
       const args = ["manifest", "add", manifestRef, x.ref];
@@ -294,6 +320,8 @@ export async function publishCommand(opts) {
   }
 
   if (push && !dryRun && !quiet) {
-    process.stdout.write("\nTip: if push failed with auth, run: podman login docker.io\n");
+    process.stdout.write(
+      "\nTip: if push failed with auth, run: podman login docker.io\n",
+    );
   }
 }
