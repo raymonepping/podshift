@@ -9,6 +9,7 @@ import { cleanCommand } from "../src/commands/clean.js";
 import { restoreCommand } from "../src/commands/restore.js";
 import { archivesCommand } from "../src/commands/archives.js";
 import { candidatesCommand } from "../src/commands/candidates.js";
+import { publishCommand } from "../src/commands/publish.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json");
@@ -142,5 +143,23 @@ program
   )
   .option("--quiet", "Reduce output (text mode)")
   .action(candidatesCommand);
+
+  program
+    .command("publish")
+    .description("Build (multi-arch) and optionally push an image using Podman")
+    .option("--root <path>", "Project root", ".")
+    .requiredOption("--image <ref>", "Image ref, e.g. docker.io/repping/podshift-example-web")
+    .option("--tag <tag>", "Tag", "latest")
+    .option("--platforms <list>", "Platforms", "linux/amd64,linux/arm64")
+    .option("--context <path>", "Build context (defaults to repo root)", ".")
+    .option(
+      "--file <path>",
+      "Dockerfile/Containerfile path (defaults to Containerfile then Dockerfile)"
+    )
+    .option("--push", "Push manifest to registry", false)
+    .option("--out <path>", "Output folder", "./output/podshift")
+    .option("--dry-run", "Print commands only", false)
+    .option("--quiet", "Reduce output noise", false)
+    .action(publishCommand);
 
 program.parse(process.argv);
